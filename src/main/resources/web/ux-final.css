@@ -1,0 +1,120 @@
+
+/* LAN Messenger - Readability and emoji styling */
+
+:root {
+  font-family: "Segoe UI Variable Text", "Segoe UI", Arial, sans-serif;
+}
+
+body {
+  font-size: 15px;
+  line-height: 1.52;
+  -webkit-font-smoothing: antialiased;
+}
+
+.title-name {
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.profile-copy strong,
+#my-name {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.contact-name {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+.contact-sub {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.section-title {
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.search-box input {
+  font-size: 14px;
+}
+
+.chat-peer strong,
+#peer-name {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.chat-peer span,
+#peer-status {
+  font-size: 12px;
+}
+
+.welcome-state h2 {
+  font-size: 23px;
+  font-weight: 780;
+}
+
+.welcome-state p,
+.sidebar-empty {
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.bubble,
+.bubble-text {
+  font-size: 15px;
+  line-height: 1.62;
+  font-weight: 480;
+}
+
+.bubble-meta,
+.bubble-forwarded {
+  font-size: 11px;
+}
+
+.composer textarea {
+  font-size: 15px;
+  line-height: 1.48;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.composer:focus-within {
+  border-color: var(--accent);
+}
+
+.emoji-menu {
+  grid-template-columns: repeat(7, 40px);
+  max-width: min(326px, 92vw);
+  max-height: 280px;
+  overflow-y: auto;
+  gap: 3px;
+  padding: 11px;
+}
+
+.emoji-menu button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 5px;
+}
+
+.emoji-menu button img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.emoji-image {
+  width: 1.28em;
+  height: 1.28em;
+  vertical-align: -0.26em;
+  margin: 0 0.025em;
+  display: inline-block;
+}

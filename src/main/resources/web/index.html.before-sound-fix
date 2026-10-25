@@ -1,0 +1,535 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>LAN Messenger</title>
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+
+  <!-- Main UI -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Typography and colorful emojis -->
+  <link rel="stylesheet" href="ux-final.css">
+
+  <!-- Independent group chat module -->
+  <link rel="stylesheet" href="groups.css">
+
+  <style>
+    /* Keep group and private panels separate.
+       Important because groups.css loads after styles.css. */
+    .group-view.hidden,
+    .group-list.hidden,
+    .group-modal-backdrop.hidden {
+      display: none !important;
+    }
+
+    .group-new[hidden],
+    #group-manage[hidden] {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body data-theme="midnight">
+
+<!-- SVG icon collection -->
+<svg class="sprites"
+     xmlns="http://www.w3.org/2000/svg"
+     aria-hidden="true">
+
+  <symbol id="i-search" viewBox="0 0 24 24">
+    <circle cx="11" cy="11" r="7"/>
+    <path d="m16 16 5 5"/>
+  </symbol>
+
+  <symbol id="i-link" viewBox="0 0 24 24">
+    <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-2 2M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l2-2"/>
+  </symbol>
+
+  <symbol id="i-send" viewBox="0 0 24 24">
+    <path d="m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13"/>
+  </symbol>
+
+  <symbol id="i-palette" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9"/>
+    <circle cx="8" cy="10" r="1"/>
+    <circle cx="12" cy="7" r="1"/>
+    <circle cx="17" cy="11" r="1"/>
+    <path d="M13 21c-1.5-2-.5-4 1-5.5 2-2 7 0 7-3"/>
+  </symbol>
+
+  <symbol id="i-camera" viewBox="0 0 24 24">
+    <path d="M3 7h4l2-3h6l2 3h4v13H3z"/>
+    <circle cx="12" cy="13.5" r="3.2"/>
+  </symbol>
+
+  <symbol id="i-more" viewBox="0 0 24 24">
+    <circle cx="5" cy="12" r="1"/>
+    <circle cx="12" cy="12" r="1"/>
+    <circle cx="19" cy="12" r="1"/>
+  </symbol>
+
+  <symbol id="i-refresh" viewBox="0 0 24 24">
+    <path d="M20 7v5h-5M4 17v-5h5"/>
+    <path d="M6 9a7 7 0 0 1 12-2l2 5M4 12l2 5a7 7 0 0 0 12-2"/>
+  </symbol>
+
+  <symbol id="i-check" viewBox="0 0 24 24">
+    <path d="m4 12 5 5L20 6"/>
+  </symbol>
+
+  <symbol id="i-smile" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9"/>
+    <path d="M8 14c2 3 6 3 8 0"/>
+    <circle cx="9" cy="9" r=".7"/>
+    <circle cx="15" cy="9" r=".7"/>
+  </symbol>
+
+  <symbol id="i-close" viewBox="0 0 24 24">
+    <path d="M5 5 19 19M19 5 5 19"/>
+  </symbol>
+
+</svg>
+
+<!-- Ambient background -->
+<div class="ambient orb-a"></div>
+<div class="ambient orb-b"></div>
+<div class="ambient orb-c"></div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<!-- Custom title bar -->
+<header id="titlebar" class="titlebar">
+
+  <div class="title-drag-zone" id="drag-zone">
+    <img class="title-logo"
+         src="logo.svg"
+         alt="LAN Messenger logo">
+
+    <span class="title-name">LAN Messenger</span>
+    <span class="title-version">1.0</span>
+  </div>
+
+  <div class="window-actions">
+
+    <button id="window-min"
+            class="window-btn"
+            title="Minimize"
+            aria-label="Minimize">—</button>
+
+    <button id="window-max"
+            class="window-btn"
+            title="Maximize or restore"
+            aria-label="Maximize or restore">
+      <span class="square-icon"></span>
+    </button>
+
+    <button id="window-close"
+            class="window-btn close-btn"
+            title="Close"
+            aria-label="Close">×</button>
+
+  </div>
+
+</header>
+
+<!-- Authentication screen -->
+<section id="auth" class="auth-view">
+
+  <div class="auth-intro">
+
+    <div class="eyebrow">LAN MESSENGER</div>
+
+    <h1>
+      Stay close.
+      <br>
+      <em>Stay connected.</em>
+    </h1>
+
+    <p>
+      Send private messages, create group conversations,
+      and share files with people on your local network.
+      Your conversations stay on your devices.
+    </p>
+
+    <div class="intro-foot">
+      <i class="online-dot"></i>
+      <span>Peer-to-peer messaging · No internet required</span>
+    </div>
+
+  </div>
+
+  <section class="auth-card glass">
+
+    <div class="auth-icon">
+      <img src="logo.svg" alt="">
+    </div>
+
+    <h2 id="auth-heading">Welcome back</h2>
+
+    <p id="auth-subtitle">
+      Sign in to your account on this computer.
+    </p>
+
+    <form id="auth-form">
+
+      <label>
+        Username
+        <input id="username"
+               required
+               autocomplete="username"
+               maxlength="24"
+               placeholder="Your username">
+      </label>
+
+      <label>
+        Password
+        <input id="password"
+               required
+               type="password"
+               autocomplete="current-password"
+               minlength="8"
+               placeholder="Your password">
+      </label>
+
+      <label id="confirm-wrap" class="hidden">
+        Confirm password
+        <input id="confirm"
+               type="password"
+               autocomplete="new-password"
+               placeholder="Repeat your password">
+      </label>
+
+      <button type="button"
+              class="pick-avatar hidden"
+              id="register-avatar">
+        <svg class="icon">
+          <use href="#i-camera"/>
+        </svg>
+        <span id="avatar-file-label">
+          Add profile photo
+        </span>
+      </button>
+
+      <p id="auth-error" class="form-error"></p>
+
+      <button id="auth-submit"
+              class="primary-btn"
+              type="submit">
+        Sign in
+      </button>
+
+    </form>
+
+    <button id="switch-mode"
+            class="text-link"
+            type="button">
+      New here? Create an account
+    </button>
+
+  </section>
+
+</section>
+
+<!-- Main application -->
+<main id="app" class="app-view hidden">
+
+  <!-- Main toolbar -->
+  <div class="topbar">
+
+    <div class="topbar-title">
+      <span class="eyebrow">LOCAL WORKSPACE</span>
+      <strong>Messages</strong>
+    </div>
+
+    <div class="topbar-actions">
+
+      <span class="network-pill">
+        <i class="online-dot"></i>
+        Local network
+      </span>
+
+      <button id="refresh"
+              class="round-icon"
+              aria-label="Refresh contacts"
+              title="Refresh contacts">
+        <svg class="icon">
+          <use href="#i-refresh"/>
+        </svg>
+      </button>
+
+      <!-- Theme selector -->
+      <div class="theme-wrap">
+
+        <button id="theme-toggle"
+                class="round-icon"
+                aria-label="Choose theme"
+                title="Change appearance">
+          <svg class="icon">
+            <use href="#i-palette"/>
+          </svg>
+        </button>
+
+        <div id="theme-menu"
+             class="theme-menu glass hidden">
+
+          <div class="menu-header">
+            APPEARANCE
+          </div>
+
+          <button data-choice="midnight">
+            <i class="swatch midnight"></i>
+            <span>
+              Midnight
+              <small>Deep navy</small>
+            </span>
+            <span class="theme-check">✓</span>
+          </button>
+
+          <button data-choice="aurora">
+            <i class="swatch aurora"></i>
+            <span>
+              Aurora
+              <small>Violet dark</small>
+            </span>
+            <span class="theme-check">✓</span>
+          </button>
+
+          <button data-choice="frost">
+            <i class="swatch frost"></i>
+            <span>
+              Frost
+              <small>Ocean blue</small>
+            </span>
+            <span class="theme-check">✓</span>
+          </button>
+
+          <button data-choice="pearl">
+            <i class="swatch pearl"></i>
+            <span>
+              Pearl
+              <small>Clean light</small>
+            </span>
+            <span class="theme-check">✓</span>
+          </button>
+
+          <button data-choice="sunrise">
+            <i class="swatch sunrise"></i>
+            <span>
+              Sunrise
+              <small>Warm cream</small>
+            </span>
+            <span class="theme-check">✓</span>
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Sidebar and conversation workspace -->
+  <div class="workspace">
+
+    <aside class="sidebar glass">
+
+      <!-- My profile -->
+      <div class="my-profile">
+
+        <div id="my-avatar"
+             class="avatar large"></div>
+
+        <div class="profile-copy">
+          <strong id="my-name">
+            Your profile
+          </strong>
+          <span>
+            <i class="online-dot"></i>
+            Available on LAN
+          </span>
+        </div>
+
+        <button id="change-photo"
+                class="round-icon subtle"
+                title="Change profile picture"
+                aria-label="Change profile picture">
+          <svg class="icon">
+            <use href="#i-camera"/>
+          </svg>
+        </button>
+
+      </div>
+
+      <!-- Group tabs are injected here by groups.js -->
+      <div class="section-title">
+        <span>Chats</span>
+        <span id="contact-count" class="count">0</span>
+      </div>
+
+      <div class="search-box">
+        <svg class="icon">
+          <use href="#i-search"/>
+        </svg>
+
+        <input id="search"
+               placeholder="Search people..."
+               aria-label="Search people">
+      </div>
+
+      <!-- Private contacts -->
+      <div id="contacts"
+           class="contacts"></div>
+
+      <!-- Group list is injected by groups.js -->
+
+      <div class="sidebar-foot">
+        People on the same LAN appear here when discoverable.
+      </div>
+
+    </aside>
+
+    <!-- Existing private chat -->
+    <section class="conversation glass">
+
+      <header class="chat-head">
+
+        <div id="peer-avatar"
+             class="avatar medium">?</div>
+
+        <div class="chat-peer">
+          <strong id="peer-name">
+            Your messages
+          </strong>
+
+          <span id="peer-status">
+            Choose a person to start chatting
+          </span>
+        </div>
+
+        <button id="chat-menu-button"
+                class="round-icon subtle hidden"
+                title="Conversation options"
+                aria-label="Conversation options">
+          <svg class="icon">
+            <use href="#i-more"/>
+          </svg>
+        </button>
+
+        <div id="chat-menu"
+             class="pop-menu glass hidden">
+          <button id="clear-chat">
+            Clear conversation for me
+          </button>
+        </div>
+
+      </header>
+
+      <div id="messages" class="messages"></div>
+
+      <div id="composer"
+           class="composer glass disabled">
+
+        <button id="attach"
+                class="round-icon attach-btn"
+                title="Attach file"
+                aria-label="Attach file">
+          <svg class="icon">
+            <use href="#i-link"/>
+          </svg>
+        </button>
+
+        <textarea id="message-input"
+                  placeholder="Select a conversation"
+                  aria-label="Message"
+                  rows="1"
+                  disabled></textarea>
+
+        <button id="emoji"
+                class="round-icon emoji-btn"
+                title="Insert emoji"
+                aria-label="Insert emoji">
+          <svg class="icon">
+            <use href="#i-smile"/>
+          </svg>
+        </button>
+
+        <button id="send"
+                class="send-btn"
+                title="Send message"
+                aria-label="Send message"
+                disabled>
+          <svg class="icon">
+            <use href="#i-send"/>
+          </svg>
+        </button>
+
+        <div id="emoji-menu"
+             class="emoji-menu glass hidden"></div>
+
+      </div>
+
+    </section>
+
+    <!-- Independent Groups conversation
+         is injected by groups.js -->
+
+  </div>
+
+</main>
+
+<!-- Forward message modal -->
+<div id="forward-modal"
+     class="modal-backdrop hidden"
+     role="dialog"
+     aria-modal="true"
+     aria-label="Forward message">
+
+  <div class="forward-card glass">
+
+    <div class="forward-header">
+
+      <strong>Forward message</strong>
+
+      <button id="forward-close"
+              class="round-icon"
+              aria-label="Close">
+        <svg class="icon">
+          <use href="#i-close"/>
+        </svg>
+      </button>
+
+    </div>
+
+    <p>
+      Select someone on your LAN.
+      Your message will be sent to them.
+    </p>
+
+    <div id="forward-contacts"
+         class="forward-contacts"></div>
+
+  </div>
+
+</div>
+
+<!-- Core private chat: always loads first -->
+<script src="app.js"></script>
+
+<!-- Text styling, emojis, Enter inserts newline -->
+<script src="ux-final.js"></script>
+
+<!-- Independent optional group chat module -->
+<script src="groups.js"></script>
+
+  <script src="multi-select.js"></script>
+<script src="group-clear.js"></script>
+    <script src="notification-sounds.js"></script>
+    <script src="profile-viewer.js"></script>
+<script src="voice-messages.js"></script>
+</body>
+</html>

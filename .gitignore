@@ -1,0 +1,38 @@
+﻿# Build output
+build/
+dist/
+target/
+out/
+Releases/
+*.class
+*.exe
+*.msi
+
+# Databases and user data
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.log
+
+# Credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+**/secrets.properties
+
+# IDE files and backups
+.idea/
+.vscode/
+*.iml
+*.bak
+*.backup
+*.tmp
+*.pre-branding-backup
+Thumbs.db

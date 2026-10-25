@@ -1,0 +1,290 @@
+
+package com.lanmessenger.frontend.web;
+
+import com.lanmessenger.app.MessengerEngine;
+
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.concurrent.Worker;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.Scene;
+import javafx.scene.image.Image;
+import javafx.scene.web.WebView;
+import javafx.stage.Screen;
+import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+
+import netscape.javascript.JSObject;
+
+import java.net.URL;
+import java.util.Set;
+import java.util.prefs.Preferences;
+
+public final class WebMain extends Application {
+
+    private MessengerEngine app;
+    private WebBridge bridge;
+    private GroupWebBridge groupsBridge;
+    private VoiceWebBridge voiceBridge;
+
+    // Existing window controls preserved.
+    public static final class WindowControls {
+
+        private final Stage stage;
+
+        private final Preferences prefs =
+                Preferences.userNodeForPackage(
+                        WebMain.class);
+
+        private double offsetX;
+        private double offsetY;
+
+        private double restoreX;
+        private double restoreY;
+        private double restoreW;
+        private double restoreH;
+
+        private boolean maximized;
+
+        public WindowControls(Stage stage) {
+            this.stage = stage;
+        }
+
+        public void minimize() {
+            Platform.runLater(
+                    () -> stage.setIconified(true));
+        }
+
+        public void close() {
+            Platform.runLater(stage::close);
+        }
+
+        public boolean isMaximized() {
+            return maximized;
+        }
+
+        public void maximize() {
+
+            Platform.runLater(() -> {
+
+                if (!maximized) {
+
+                    restoreX = stage.getX();
+                    restoreY = stage.getY();
+
+                    restoreW = stage.getWidth();
+                    restoreH = stage.getHeight();
+
+                    Rectangle2D bounds =
+                            Screen.getPrimary()
+                                    .getVisualBounds();
+
+                    stage.setX(bounds.getMinX());
+                    stage.setY(bounds.getMinY());
+                    stage.setWidth(bounds.getWidth());
+                    stage.setHeight(bounds.getHeight());
+
+                    maximized = true;
+
+                } else {
+
+                    stage.setX(restoreX);
+                    stage.setY(restoreY);
+
+                    stage.setWidth(restoreW);
+                    stage.setHeight(restoreH);
+
+                    maximized = false;
+                }
+            });
+        }
+
+        public void beginMove(
+                double screenX,
+                double screenY
+        ) {
+            offsetX = screenX - stage.getX();
+            offsetY = screenY - stage.getY();
+        }
+
+        public void dragMove(
+                double screenX,
+                double screenY
+        ) {
+            if (!maximized) {
+                stage.setX(screenX - offsetX);
+                stage.setY(screenY - offsetY);
+            }
+        }
+
+        public String getTheme() {
+            return prefs.get(
+                    "ui-theme", "midnight");
+        }
+
+        public void saveTheme(String name) {
+
+            if (Set.of(
+                    "midnight",
+                    "aurora",
+                    "frost",
+                    "pearl",
+                    "sunrise"
+            ).contains(name)) {
+
+                prefs.put("ui-theme", name);
+            }
+        }
+    }
+
+    @Override
+    public void start(Stage stage) throws Exception {
+
+        app = new MessengerEngine();
+
+        stage.initStyle(StageStyle.UNDECORATED);
+
+        WebView view = new WebView();
+        view.setContextMenuEnabled(false);
+
+        view.getEngine().setJavaScriptEnabled(true);
+
+        WindowControls controls =
+                new WindowControls(stage);
+
+        view.getEngine()
+                .getLoadWorker()
+                .stateProperty()
+                .addListener((observable, old, state) -> {
+
+                    if (state != Worker.State.SUCCEEDED) {
+                        return;
+                    }
+
+                    // Close optional bridges if the page reloads.
+                    if (voiceBridge != null) {
+                        voiceBridge.close();
+                        voiceBridge = null;
+                    }
+
+                    if (groupsBridge != null) {
+                        groupsBridge.close();
+                        groupsBridge = null;
+                    }
+
+                    // Essential private messaging bridge.
+                    bridge = new WebBridge(
+                            app,
+                            view.getEngine(),
+                            stage
+                    );
+
+                    JSObject window = (JSObject)
+                            view.getEngine()
+                                    .executeScript("window");
+
+                    window.setMember("lanJava", bridge);
+                    window.setMember(
+                            "windowControls", controls);
+
+                    // Independent optional group module.
+                    try {
+
+                        groupsBridge = new GroupWebBridge(
+                                app,
+                                view.getEngine(),
+                                stage
+                        );
+
+                        window.setMember(
+                                "lanGroups",
+                                groupsBridge
+                        );
+
+                    } catch (Exception error) {
+
+                        System.err.println(
+                                "Group bridge unavailable: "
+                                        + error.getMessage());
+                    }
+
+                    // Independent optional voice module.
+                    try {
+
+                        voiceBridge = new VoiceWebBridge(
+                                app,
+                                view.getEngine()
+                        );
+
+                        window.setMember(
+                                "lanVoice",
+                                voiceBridge
+                        );
+
+                    } catch (Exception error) {
+
+                        System.err.println(
+                                "Voice bridge unavailable: "
+                                        + error.getMessage());
+                    }
+
+                    // Activate existing login interface.
+                    view.getEngine().executeScript(
+                            "if(window.LAN&&window.LAN.ready)" +
+                            "window.LAN.ready();"
+                    );
+                });
+
+        URL page = getClass().getResource(
+                "/web/index.html");
+
+        if (page == null) {
+            throw new IllegalStateException(
+                    "Missing /web/index.html");
+        }
+
+        view.getEngine().load(
+                page.toExternalForm());
+
+        URL icon = getClass().getResource(
+                "/web/logo.png");
+
+        if (icon != null) {
+            stage.getIcons().add(
+                    new Image(icon.toExternalForm()));
+        }
+
+        stage.setTitle("LAN Messenger");
+
+        stage.setScene(
+                new Scene(view, 1250, 790));
+
+        stage.setMinWidth(900);
+        stage.setMinHeight(590);
+
+        stage.show();
+    }
+
+    @Override
+    public void stop() {
+
+        if (voiceBridge != null) {
+            voiceBridge.close();
+            voiceBridge = null;
+        }
+
+        if (groupsBridge != null) {
+            groupsBridge.close();
+            groupsBridge = null;
+        }
+
+        if (app != null) {
+            app.close();
+            app = null;
+        }
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
